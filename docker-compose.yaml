@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  app:
+    image: app
+    container_name: app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+        - "8080:8080"
+    depends_on:
+       - liquibase
+
+
+  db:
+    image: postgres:14.5-alpine
+    container_name: db
+    hostname: db
+    environment:
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./infrastructure/db/:/docker-entrypoint-initdb.d/
+      - db-data:/var/lib/postgresql/data
+
+  liquibase:
+    image: liquibase/liquibase:4.9.1
+    network_mode: host
+    depends_on:
+      - db
+    volumes:
+      - ./src/main/resources/db/changelog/:/liquibase/changelog
+    command: --defaults-file=/liquibase/changelog/liquibase.properties update
+
+
+volumes:
+  db-data:
